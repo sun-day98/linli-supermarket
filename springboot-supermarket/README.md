@@ -102,4 +102,24 @@ H2<u> 数据仅存在于内存中，每次启动都是空库并重新播种。H2
 - **端口被占用**：修改 `application.yml` 的 `server.port`，同时同步前端 Vite proxy 目标。
 - **跨域**：`WebConfig` 已放行全部来源（含 5173/5174 与小程序），开发调试无需额外配置。
 - **数据想重置**：MySQL 下执行 `DROP DATABASE supermarket_h5;` 后重新建库再启动；H2 下重启进程即可。
-- **白名单**：`/api/auth/**` 与 `GET /products/**`、`/categories`、`/store`、`/delivery/areas`、`/reviews` 免 Token；管理端 `/api/admin/**` 需管理员 Token。
+- **白名单**：仅 `/api/auth/login`、`/api/auth/admin-login` 与公开 GET（`/api/products/**`、`/api/categories`、`/api/store`、`/api/delivery/areas`、`/api/reviews`）免 Token；`GET /api/categories/all` 已收权需 Token；管理端 `/api/admin/**` 需管理员 Token。
+
+## 七、质量门禁
+
+项目已纳入 Git，并将 `mvn test` 固化为提交门禁：
+
+- **CI（自动）**：`.github/workflows/ci.yml` 在 push / PR 到 `main`、`master` 时自动执行后端 94 用例 + 前端三端构建（H5 / 后台 `npm run build`，小程序 `npm run typecheck`）。
+- **本地（提交前）**：`bash scripts/verify.sh`（Git Bash / Linux / macOS）或 `scripts/verify.bat`（Windows CMD）。默认执行后端 94 用例 + 三端类型检查（无文件删除，适配本机沙箱策略）；需要完整打包时设置 `FULL_BUILD=1`。
+- **测试稳定性**：`src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker` 固定为 `mock-maker-subclass`，避免 Mockito 5 默认 inline mock maker 在部分环境自附加 agent 失败（曾导致 84 个用例报错）。
+
+## 八、配置外部化（安全基线）
+
+以下配置均支持环境变量覆盖，演示默认值保证开箱即用：
+
+| 环境变量 | 用途 | 默认值 |
+| --- | --- | --- |
+| `APP_TOKEN_SECRET` | Token 签名密钥（未设置时启动输出安全告警） | 演示密钥 |
+| `DB_USERNAME` / `DB_PASSWORD` | 数据库账号密码 | `root` / `root` |
+| `APP_CORS_ORIGINS` | CORS 白名单，逗号分隔；`*` 时自动禁用凭证携带 | `*` |
+| `DEMO_MODE` / `DEMO_VERIFY_CODE` | 演示验证码开关与验证码值 | `true` / `123456` |
+

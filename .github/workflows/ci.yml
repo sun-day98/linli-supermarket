@@ -1,0 +1,68 @@
+name: CI - 邻里小超质量门禁
+
+# 提交到 main/master 或发起 PR 时自动执行；也可在 Actions 页面手动触发。
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  backend:
+    name: 后端 · 编译与单元测试（94 用例）
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 配置 JDK 17（含 Maven 依赖缓存）
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: 运行测试门禁
+        working-directory: springboot-supermarket
+        run: mvn -B -ntp test
+
+      - name: 归档测试报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: springboot-supermarket/target/surefire-reports/
+          if-no-files-found: ignore
+
+  frontend:
+    name: 前端 · ${{ matrix.project }}（${{ matrix.script }}）
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: supermarket-h5
+            script: build
+          - project: supermarket-web-manager
+            script: build
+          - project: supermarket-wechat
+            script: typecheck
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 配置 Node.js 20（含 npm 缓存）
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: ${{ matrix.project }}/package-lock.json
+
+      - name: 安装依赖
+        working-directory: ${{ matrix.project }}
+        run: npm ci
+
+      - name: 执行 ${{ matrix.script }}
+        working-directory: ${{ matrix.project }}
+        run: npm run ${{ matrix.script }}
