@@ -19,7 +19,11 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -48,15 +52,17 @@ public class CouponServiceImpl implements CouponService {
     private OrdersMapper ordersMapper;
 
     @Override
+    @Transactional(readOnly = true)
     public List<CouponVO> available(Long userId, BigDecimal amount) {
         BigDecimal base = amount == null ? BigDecimal.ZERO : amount;
         List<UserCoupon> held = userCouponMapper.selectList(new LambdaQueryWrapper<UserCoupon>()
                 .eq(UserCoupon::getUserId, userId)
                 .eq(UserCoupon::getStatus, STATUS_UNUSED)
                 .orderByAsc(UserCoupon::getGetTime));
+        Map<Long, Coupon> couponMap = loadCoupons(held);
         List<CouponVO> result = new ArrayList<>();
         for (UserCoupon uc : held) {
-            Coupon coupon = couponMapper.selectById(uc.getCouponId());
+            Coupon coupon = couponMap.get(uc.getCouponId());
             if (coupon == null || checkUsable(coupon, uc, base) != null) {
                 continue;
             }
@@ -65,14 +71,30 @@ public class CouponServiceImpl implements CouponService {
         return result;
     }
 
+    /** 批量加载券定义，避免逐条 selectById 造成 N+1。 */
+    private Map<Long, Coupon> loadCoupons(List<UserCoupon> held) {
+        if (held == null || held.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Long> ids = held.stream().map(UserCoupon::getCouponId)
+                .filter(java.util.Objects::nonNull).distinct().collect(Collectors.toList());
+        if (ids.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return couponMapper.selectBatchIds(ids).stream()
+                .collect(Collectors.toMap(Coupon::getId, Function.identity(), (a, b) -> a));
+    }
+
     @Override
+    @Transactional(readOnly = true)
     public List<CouponVO> my(Long userId) {
         List<UserCoupon> held = userCouponMapper.selectList(new LambdaQueryWrapper<UserCoupon>()
                 .eq(UserCoupon::getUserId, userId)
                 .orderByDesc(UserCoupon::getGetTime));
+        Map<Long, Coupon> couponMap = loadCoupons(held);
         List<CouponVO> result = new ArrayList<>();
         for (UserCoupon uc : held) {
-            Coupon coupon = couponMapper.selectById(uc.getCouponId());
+            Coupon coupon = couponMap.get(uc.getCouponId());
             if (coupon == null) {
                 continue;
             }

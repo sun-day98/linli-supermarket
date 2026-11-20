@@ -121,5 +121,26 @@ H2<u> 数据仅存在于内存中，每次启动都是空库并重新播种。H2
 | `APP_TOKEN_SECRET` | Token 签名密钥（未设置时启动输出安全告警） | 演示密钥 |
 | `DB_USERNAME` / `DB_PASSWORD` | 数据库账号密码 | `root` / `root` |
 | `APP_CORS_ORIGINS` | CORS 白名单，逗号分隔；`*` 时自动禁用凭证携带 | `*` |
-| `DEMO_MODE` / `DEMO_VERIFY_CODE` | 演示验证码开关与验证码值 | `true` / `123456` |
+| `APP_DEMO_VERIFY_CODE` | 演示验证码值 | `123456` |
+| `APP_SMS_MODE` | 短信服务模式：`demo` 固定验证码 / `real` 生产实现 | `demo` |
+| `APP_STRICT_HTTP_STATUS` | `false` 全 200+body.code；`true` 标准 HTTP 状态码（需前端同步） | `false` |
+| `LOGIN_MAX_FAILURES` / `LOGIN_LOCK_MINUTES` | 管理员登录失败阈值 / 锁定时长 | `5` / `15` |
+| `H2_CONSOLE_ENABLED` | H2 控制台开关（生产设 false） | `true` |
+
+## 九、生产化增强（P2 清单已处理）
+
+在演示基线之上完成的生产化项，全部保持"默认开箱即用"：
+
+- **Token 吊销（S1-Lite）**：`TokenUtil` 签发携带 `iat`；`TokenRevocationStore` 内存吊销表按"用户+角色+签发时间"判定，旧 Token 立即失效。`POST /api/admin/tokens/revoke` 为吊销入口。纯内存单实例，生产多实例应换 Redis。
+- **鉴权注解化（S2）**：`@RequireAdmin` 叠加在路径规则之上，新增管理写接口只需加注解；`GET /api/coupons/admin` 仍开放给结算页。
+- **管理审计日志（S4）**：`@AuditLog` + `AuditAspect` 记录 actorId/IP/动作/参数摘要/耗时，密码/令牌/验证码自动脱敏。
+- **登录限流（S5）**：管理员登录按用户名维度 5 次失败锁定 15 分钟，内存实现可配置。
+- **N+1 治理**：订单分页与统计页 `detailBatch` 批量装配、券列表 `selectBatchIds`、下单 `buildItems` 批量取商品（均带单查兜底）。
+- **只读事务**：商品/订单/券的查询入口加 `@Transactional(readOnly=true)`。
+- **HTTP 语义开关（C1）**：默认全 200 兼容三端；`APP_STRICT_HTTP_STATUS=true` 时映射 401/400/500（前端需增加 axios `validateStatus` 放行 4xx）。
+- **短信 seam（C2）**：`SmsService` 接口 + `DemoSmsServiceImpl`，生产可实现真实短信 Bean 并设置 `APP_SMS_MODE=real` 替换。**支付仍为模拟**（`OrderServiceImpl.pay` 为 CAS 幂等），真实支付网关需商户凭证，接入时替换 pay 实现即可。
+- **数据库迁移（P5）**：默认仍用 `schema.sql` 自动建表；可选 `application-flyway.yml` profile + `db/migration/V1__init.sql`，生产用 `--spring.profiles.active=flyway` 启用 Flyway 版本化（已开 `baseline-on-migrate`）。
+- **购物车库存钳制**：`update` 与 `add` 一致，数量下限 1、上限为商品库存。
+
+测试由 94 增至 **103**（新增吊销表 5 例 + 限流 4 例）。
 

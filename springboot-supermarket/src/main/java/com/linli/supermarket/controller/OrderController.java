@@ -2,6 +2,8 @@ package com.linli.supermarket.controller;
 
 import com.linli.supermarket.common.PageResult;
 import com.linli.supermarket.common.Result;
+import com.linli.supermarket.config.AuditLog;
+import com.linli.supermarket.config.RequireAdmin;
 import com.linli.supermarket.dto.CheckoutDTO;
 import com.linli.supermarket.dto.OrderQueryDTO;
 import com.linli.supermarket.entity.Orders;
@@ -60,6 +62,8 @@ public class OrderController {
 
     /** 后台发货。 */
     @PostMapping("/api/orders/{id}/deliver")
+    @RequireAdmin
+    @AuditLog("订单发货")
     public Result<Void> deliver(@PathVariable Long id, @RequestBody(required = false) Map<String, Object> body) {
         Long deliverymanId = null;
         if (body != null && body.get("deliverymanId") != null) {

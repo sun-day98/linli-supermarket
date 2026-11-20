@@ -2,6 +2,8 @@ package com.linli.supermarket.controller;
 
 import com.linli.supermarket.common.PageResult;
 import com.linli.supermarket.common.Result;
+import com.linli.supermarket.config.AuditLog;
+import com.linli.supermarket.config.RequireAdmin;
 import com.linli.supermarket.dto.CouponDTO;
 import com.linli.supermarket.service.CouponService;
 import com.linli.supermarket.util.UserContext;
@@ -56,17 +58,22 @@ public class CouponController {
     }
 
     @PostMapping("/admin")
+    @RequireAdmin
+    @AuditLog("发放优惠券定义")
     public Result<Map<String, Long>> createAdmin(@Valid @RequestBody CouponDTO dto) {
         return Result.ok(Collections.singletonMap("id", couponService.createAdmin(dto)));
     }
 
     @PutMapping("/admin/{id}")
+    @RequireAdmin
+    @AuditLog("编辑优惠券")
     public Result<Void> updateAdmin(@PathVariable Long id, @Valid @RequestBody CouponDTO dto) {
         couponService.updateAdmin(id, dto);
         return Result.ok();
     }
 
     @DeleteMapping("/admin/{id}")
+    @RequireAdmin
     public Result<Void> deleteAdmin(@PathVariable Long id) {
         couponService.deleteAdmin(id);
         return Result.ok();

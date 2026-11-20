@@ -46,6 +46,7 @@ public class ProductServiceImpl implements ProductService {
     private CartMapper cartMapper;
 
     @Override
+    @Transactional(readOnly = true)
     public PageResult<ProductVO> page(ProductQueryDTO dto) {
         int current = dto.getCurrent() == null ? 1 : Math.max(1, dto.getCurrent());
         int size = dto.getSize() == null ? 10 : Math.min(100, Math.max(1, dto.getSize()));
@@ -66,6 +67,16 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    public Map<Long, Product> getByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return java.util.Collections.emptyMap();
+        }
+        return productMapper.selectBatchIds(ids).stream()
+                .collect(Collectors.toMap(Product::getId, Function.identity(), (a, b) -> a));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public ProductVO detail(Long id) {
         Product product = productMapper.selectById(id);
         if (product == null || product.getStatus() != null && product.getStatus() == 0) {

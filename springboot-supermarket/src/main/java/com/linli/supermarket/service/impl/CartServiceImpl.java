@@ -103,7 +103,13 @@ public class CartServiceImpl implements CartService {
     @Transactional(rollbackFor = Exception.class)
     public void update(Long userId, Long cartId, CartDTO dto) {
         Cart cart = requireOwned(userId, cartId);
-        cart.setQuantity(dto.getQuantity());
+        int quantity = dto.getQuantity() == null ? 1 : Math.max(1, dto.getQuantity());
+        // 库存钳制：与 add() 保持一致，避免写入负数或超库存数量。
+        Product product = productMapper.selectById(cart.getProductId());
+        if (product != null && product.getStock() != null && quantity > product.getStock()) {
+            quantity = product.getStock();
+        }
+        cart.setQuantity(quantity);
         if (dto.getSelected() != null) {
             cart.setSelected(dto.getSelected());
         }

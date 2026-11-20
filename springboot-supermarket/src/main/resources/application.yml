@@ -22,6 +22,9 @@ spring:
       mode: always
       schema-locations: classpath:schema.sql
       continue-on-error: false
+  # 默认关闭 Flyway（演示用 schema.sql）；仅在 flyway profile 中启用。
+  flyway:
+    enabled: false
   jackson:
     time-zone: Asia/Shanghai
     date-format: yyyy-MM-dd HH:mm:ss
@@ -47,6 +50,17 @@ app:
   auth:
     # 演示固定验证码；生产接入短信后通过 APP_DEMO_VERIFY_CODE 置空并改走短信校验。
     demo-verify-code: ${APP_DEMO_VERIFY_CODE:123456}
+  api:
+    # 默认 false：HTTP 200 + body.code（兼容三端前端）。
+    # 生产可设 true 启用标准状态码（401/403/400/500），需前端同步 validateStatus 放行 4xx。
+    strict-http-status: ${APP_STRICT_HTTP_STATUS:false}
+  security:
+    # 管理员登录失败限流：5 次失败锁定 15 分钟。
+    login-max-failures: ${LOGIN_MAX_FAILURES:5}
+    login-lock-minutes: ${LOGIN_LOCK_MINUTES:15}
+  sms:
+    # 短信服务模式：demo=固定验证码（默认，开箱即用）；real=生产接入真实短信实现。
+    mode: ${APP_SMS_MODE:demo}
 
 logging:
   level:
@@ -66,4 +80,8 @@ spring:
     password: ""
   h2:
     console:
-      enabled: true
+      # 演示默认开启便于调试；生产用 H2_CONSOLE_ENABLED=false 关闭。
+      enabled: ${H2_CONSOLE_ENABLED:true}
+      settings:
+        # 禁止远程访问控制台，仅本机可用。
+        web-allow-others: false

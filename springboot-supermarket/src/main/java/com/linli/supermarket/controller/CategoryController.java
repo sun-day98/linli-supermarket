@@ -1,6 +1,7 @@
 package com.linli.supermarket.controller;
 
 import com.linli.supermarket.common.Result;
+import com.linli.supermarket.config.RequireAdmin;
 import com.linli.supermarket.dto.CategoryDTO;
 import com.linli.supermarket.entity.Category;
 import com.linli.supermarket.service.CategoryService;
@@ -39,17 +40,20 @@ public class CategoryController {
     }
 
     @PostMapping
+    @RequireAdmin
     public Result<Map<String, Long>> create(@Valid @RequestBody CategoryDTO dto) {
         return Result.ok(Collections.singletonMap("id", categoryService.create(dto)));
     }
 
     @PutMapping("/{id}")
+    @RequireAdmin
     public Result<Void> update(@PathVariable Long id, @Valid @RequestBody CategoryDTO dto) {
         categoryService.update(id, dto);
         return Result.ok();
     }
 
     @DeleteMapping("/{id}")
+    @RequireAdmin
     public Result<Void> delete(@PathVariable Long id) {
         categoryService.delete(id);
         return Result.ok();

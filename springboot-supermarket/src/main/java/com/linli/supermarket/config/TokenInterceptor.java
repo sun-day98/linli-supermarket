@@ -9,8 +9,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.linli.supermarket.util.TokenRevocationStore;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
 
@@ -27,6 +29,12 @@ public class TokenInterceptor implements HandlerInterceptor {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private TokenRevocationStore tokenRevocationStore;
+
+    @Autowired(required = false)
+    private HttpStatusPolicy httpStatusPolicy;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
@@ -55,13 +63,32 @@ public class TokenInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        if (isAdminEndpoint(method, path) && !"ADMIN".equalsIgnoreCase(payload.getRole())) {
+        // Token 吊销校验（S1-Lite）：用户被禁用/改密后，吊销其此前签发的所有 Token。
+        if (tokenRevocationStore != null
+                && tokenRevocationStore.isRevoked(payload.getUserId(), payload.getRole(), payload.getIssuedAt())) {
+            writeFailure(response, ResultCode.UNAUTHORIZED, "登录状态已失效，请重新登录");
+            return false;
+        }
+
+        // 管理端判定：路径规则 + @RequireAdmin 注解叠加（取或）。
+        // handler 非 HandlerMethod（如测试中的普通 Object）时注解判定自动跳过，回退到路径判定。
+        if ((isAdminEndpoint(method, path) || isAdminAnnotated(handler))
+                && !"ADMIN".equalsIgnoreCase(payload.getRole())) {
             writeFailure(response, ResultCode.UNAUTHORIZED, "无管理员权限");
             return false;
         }
 
         UserContext.set(payload.getUserId(), payload.getRole());
         return true;
+    }
+
+    /** 判断处理器方法/类是否标注 {@link RequireAdmin}。 */
+    private boolean isAdminAnnotated(Object handler) {
+        if (!(handler instanceof HandlerMethod hm)) {
+            return false;
+        }
+        return hm.getMethodAnnotation(RequireAdmin.class) != null
+                || hm.getBeanType().isAnnotationPresent(RequireAdmin.class);
     }
 
     @Override
@@ -141,7 +168,8 @@ public class TokenInterceptor implements HandlerInterceptor {
 
     private void writeFailure(HttpServletResponse response, ResultCode resultCode, String message)
             throws IOException {
-        response.setStatus(HttpServletResponse.SC_OK);
+        int status = httpStatusPolicy == null ? HttpServletResponse.SC_OK : httpStatusPolicy.httpStatus(resultCode);
+        response.setStatus(status);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");
         response.getWriter().write(objectMapper.writeValueAsString(Result.fail(resultCode, message)));

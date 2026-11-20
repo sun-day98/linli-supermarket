@@ -5,6 +5,8 @@ import com.linli.supermarket.dto.ProductDTO;
 import com.linli.supermarket.dto.ProductQueryDTO;
 import com.linli.supermarket.entity.Product;
 import com.linli.supermarket.vo.ProductVO;
+import java.util.List;
+import java.util.Map;
 
 /** 商品服务。 */
 public interface ProductService {
@@ -16,6 +18,9 @@ public interface ProductService {
 
     /** 查询商品实体，不存在返回 null。 */
     Product getById(Long id);
+
+    /** 批量查询商品，返回 id→商品 映射（不存在的 id 不出现在 map 中）。 */
+    Map<Long, Product> getByIds(List<Long> ids);
 
     /** 条件扣库存（防超卖），返回是否扣减成功。 */
     boolean deductStock(Long id, Integer quantity);

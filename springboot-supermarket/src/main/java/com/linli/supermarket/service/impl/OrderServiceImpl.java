@@ -264,16 +264,19 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PageResult<OrderVO> pageMine(Long userId, OrderQueryDTO dto) {
         return queryPage(dto, new LambdaQueryWrapper<Orders>().eq(Orders::getUserId, userId));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PageResult<OrderVO> pageAdmin(OrderQueryDTO dto) {
         return queryPage(dto, new LambdaQueryWrapper<>());
     }
 
     @Override
+    @Transactional(readOnly = true)
     public OrderVO detail(Long orderId) {
         Orders order = ordersMapper.selectById(orderId);
         if (order == null) {
@@ -283,6 +286,17 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<OrderVO> detailBatch(List<Long> orderIds) {
+        if (orderIds == null || orderIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Orders> orders = ordersMapper.selectBatchIds(orderIds);
+        return assembleVOs(orders);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public OrderVO detailForUser(Long userId, Long orderId) {
         Orders order = requireOwned(userId, orderId);
         return toVO(order);
@@ -349,11 +363,22 @@ public class OrderServiceImpl implements OrderService {
 
     private List<OrderItem> buildItems(List<CheckoutDTO.CheckoutItem> source) {
         List<OrderItem> items = new ArrayList<>();
+        // 批量预取商品；映射缺失时回退单查，兼容 mock 场景与极端并发下架。
+        List<Long> productIds = source.stream()
+                .map(CheckoutDTO.CheckoutItem::getProductId)
+                .filter(java.util.Objects::nonNull).distinct().collect(Collectors.toList());
+        Map<Long, Product> productMap = productService.getByIds(productIds);
+        if (productMap == null) {
+            productMap = Collections.emptyMap();
+        }
         for (CheckoutDTO.CheckoutItem src : source) {
             if (src.getProductId() == null || src.getQuantity() == null || src.getQuantity() <= 0) {
                 throw new BusinessException(ResultCode.PARAM_ERROR, "结算商品参数错误");
             }
-            Product product = productService.getById(src.getProductId());
+            Product product = productMap.get(src.getProductId());
+            if (product == null) {
+                product = productService.getById(src.getProductId());
+            }
             if (product == null || product.getStatus() != null && product.getStatus() == 0) {
                 throw new BusinessException(ResultCode.PARAM_ERROR, "商品不存在或已下架");
             }
@@ -450,8 +475,14 @@ public class OrderServiceImpl implements OrderService {
         int size = dto.getSize() == null ? 10 : Math.min(100, Math.max(1, dto.getSize()));
         IPage<Orders> page = ordersMapper.selectPage(new Page<>(current, size), wrapper);
 
-        // 批量装配订单明细，消除 N+1：一次 IN 查询取回本页所有订单项，再按 orderId 分组。
-        List<Orders> records = page.getRecords();
+        List<OrderVO> vos = assembleVOs(page.getRecords());
+        return new PageResult<>(vos, page.getTotal(), page.getCurrent(), page.getSize());
+    }
+
+    /**
+     * 批量装配订单 VO：一次 IN 查询取回所有订单项，再按 orderId 分组，消除逐单查询的 N+1。
+     */
+    private List<OrderVO> assembleVOs(List<Orders> records) {
         Map<Long, List<OrderItem>> itemsByOrder = new HashMap<>();
         if (records != null && !records.isEmpty()) {
             List<Long> orderIds = records.stream().map(Orders::getId).collect(Collectors.toList());
@@ -466,7 +497,7 @@ public class OrderServiceImpl implements OrderService {
         for (Orders order : records == null ? Collections.<Orders>emptyList() : records) {
             vos.add(toVO(order, itemsByOrder.getOrDefault(order.getId(), Collections.emptyList())));
         }
-        return new PageResult<>(vos, page.getTotal(), page.getCurrent(), page.getSize());
+        return vos;
     }
 
     private OrderVO toVO(Orders order) {

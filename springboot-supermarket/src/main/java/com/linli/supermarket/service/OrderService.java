@@ -6,6 +6,7 @@ import com.linli.supermarket.dto.OrderQueryDTO;
 import com.linli.supermarket.entity.Orders;
 import com.linli.supermarket.vo.CheckoutPreviewVO;
 import com.linli.supermarket.vo.OrderVO;
+import java.util.List;
 
 /** 订单与履约服务：系统的交易一致性边界。 */
 public interface OrderService {
@@ -34,6 +35,9 @@ public interface OrderService {
 
     /** 管理端订单详情。 */
     OrderVO detail(Long orderId);
+
+    /** 批量装配订单 VO（含明细），供统计页等场景避免 N+1；按给定顺序返回。 */
+    List<OrderVO> detailBatch(List<Long> orderIds);
 
     /** 用户端订单详情（校验归属）。 */
     OrderVO detailForUser(Long userId, Long orderId);

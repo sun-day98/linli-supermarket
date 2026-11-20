@@ -13,7 +13,10 @@ import com.linli.supermarket.mapper.AddressMapper;
 import com.linli.supermarket.mapper.UserMapper;
 import com.linli.supermarket.service.AuthService;
 import com.linli.supermarket.service.CouponService;
+import com.linli.supermarket.service.SmsService;
+import com.linli.supermarket.util.LoginAttemptLimiter;
 import com.linli.supermarket.util.PasswordUtil;
+import com.linli.supermarket.util.TokenRevocationStore;
 import com.linli.supermarket.util.TokenUtil;
 import com.linli.supermarket.vo.UserVO;
 import java.time.LocalDateTime;
@@ -45,13 +48,29 @@ public class AuthServiceImpl implements AuthService {
     @Autowired
     private TokenUtil tokenUtil;
 
+    @Autowired(required = false)
+    private LoginAttemptLimiter loginAttemptLimiter;
+
+    @Autowired(required = false)
+    private TokenRevocationStore tokenRevocationStore;
+
+    @Autowired(required = false)
+    private SmsService smsService;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public UserVO login(LoginDTO dto) {
-        if (demoVerifyCode == null || demoVerifyCode.isBlank()) {
-            throw new BusinessException(ResultCode.INTERNAL_ERROR, "验证码服务未配置");
+        // 优先走短信服务 seam（生产可替换真实实现）；未注入时回退到演示固定验证码，兼容单测。
+        boolean codeOk;
+        if (smsService != null) {
+            codeOk = smsService.verify(dto.getPhone(), dto.getCode());
+        } else {
+            if (demoVerifyCode == null || demoVerifyCode.isBlank()) {
+                throw new BusinessException(ResultCode.INTERNAL_ERROR, "验证码服务未配置");
+            }
+            codeOk = demoVerifyCode.equals(dto.getCode());
         }
-        if (!demoVerifyCode.equals(dto.getCode())) {
+        if (!codeOk) {
             throw new BusinessException(ResultCode.PARAM_ERROR,
                     "验证码错误，演示环境请输入 " + demoVerifyCode);
         }
@@ -68,12 +87,25 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public String adminLogin(AdminLoginDTO dto) {
+        String limitKey = "admin:" + dto.getUsername();
+        if (loginAttemptLimiter != null) {
+            try {
+                loginAttemptLimiter.checkNotLocked(limitKey);
+            } catch (IllegalStateException ex) {
+                throw new BusinessException(ResultCode.UNAUTHORIZED, ex.getMessage());
+            }
+        }
         Admin admin = getAdminByUsername(dto.getUsername());
-        if (admin == null || admin.getStatus() != null && admin.getStatus() == 0) {
+        boolean ok = admin != null && (admin.getStatus() == null || admin.getStatus() != 0)
+                && PasswordUtil.matches(dto.getPassword(), admin.getPassword());
+        if (!ok) {
+            if (loginAttemptLimiter != null) {
+                loginAttemptLimiter.recordFailure(limitKey);
+            }
             throw new BusinessException(ResultCode.UNAUTHORIZED, "账号或密码错误");
         }
-        if (!PasswordUtil.matches(dto.getPassword(), admin.getPassword())) {
-            throw new BusinessException(ResultCode.UNAUTHORIZED, "账号或密码错误");
+        if (loginAttemptLimiter != null) {
+            loginAttemptLimiter.clear(limitKey);
         }
         return tokenUtil.createToken(admin.getId(), "ADMIN");
     }

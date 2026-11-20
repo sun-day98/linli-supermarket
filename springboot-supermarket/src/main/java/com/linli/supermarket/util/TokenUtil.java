@@ -58,10 +58,12 @@ public class TokenUtil {
 
     /** 签发 Token。 */
     public String createToken(Long userId, String role) {
-        long exp = Instant.now().toEpochMilli() + expireMillis;
+        long issuedAt = Instant.now().toEpochMilli();
+        long exp = issuedAt + expireMillis;
         Map<String, Object> claims = new LinkedHashMap<>();
         claims.put("userId", userId);
         claims.put("role", role == null ? "USER" : role);
+        claims.put("iat", issuedAt);
         claims.put("exp", exp);
         try {
             String header = URL_ENCODER.encodeToString(HEADER_JSON.getBytes(StandardCharsets.UTF_8));
@@ -135,6 +137,7 @@ public class TokenUtil {
 
         public Long userId;
         public String role;
+        public Long iat;
         public Long exp;
 
         public TokenPayload() {
@@ -146,6 +149,11 @@ public class TokenUtil {
 
         public String getRole() {
             return role;
+        }
+
+        /** Token 签发时间（毫秒），用于吊销判定；旧 Token 无此字段时为 null。 */
+        public Long getIssuedAt() {
+            return iat;
         }
 
         public Long getExp() {

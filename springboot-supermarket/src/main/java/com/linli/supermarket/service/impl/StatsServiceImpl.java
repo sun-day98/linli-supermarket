@@ -17,6 +17,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -112,9 +114,19 @@ public class StatsServiceImpl implements StatsService {
         List<Orders> orders = ordersMapper.selectList(new LambdaQueryWrapper<Orders>()
                 .orderByDesc(Orders::getCreatedAt)
                 .last("LIMIT " + size));
+        if (orders == null || orders.isEmpty()) {
+            return new ArrayList<>();
+        }
+        // 批量装配明细，避免逐单 detail() 造成 2N 查询；再按原时间倒序还原顺序。
+        List<Long> orderIds = orders.stream().map(Orders::getId).collect(Collectors.toList());
+        Map<Long, OrderVO> byId = orderService.detailBatch(orderIds).stream()
+                .collect(Collectors.toMap(OrderVO::getId, Function.identity(), (a, b) -> a));
         List<OrderVO> result = new ArrayList<>();
         for (Orders order : orders) {
-            result.add(orderService.detail(order.getId()));
+            OrderVO vo = byId.get(order.getId());
+            if (vo != null) {
+                result.add(vo);
+            }
         }
         return result;
     }
