@@ -1,0 +1,71 @@
+<view class="page mine-page">
+  <view class="user-panel">
+    <view wx:if="{{logged && profile}}" class="row user-panel__logged">
+      <view class="avatar">{{profile.nickname ? profile.nickname[0] : '邻'}}</view>
+      <view class="user-panel__info">
+        <view class="user-panel__name" bindtap="onRefreshProfile">{{profile.nickname || profile.phone}}</view>
+        <view class="user-panel__phone muted">{{profile.phone}}</view>
+      </view>
+      <view class="user-panel__points">
+        <view class="user-panel__points-num">{{profile.points}}</view>
+        <view class="muted">积分</view>
+      </view>
+    </view>
+    <view wx:else class="row user-panel__guest" bindtap="onLogin">
+      <view class="avatar avatar--guest">邻</view>
+      <view class="user-panel__info">
+        <view class="user-panel__name">登录 / 注册</view>
+        <view class="user-panel__phone muted">登录后查看订单、积分与优惠券</view>
+      </view>
+      <view class="user-panel__arrow">›</view>
+    </view>
+  </view>
+
+  <view class="card order-entry">
+    <view class="row-between order-entry__title" bindtap="onOrdersTap">
+      <text>我的订单</text>
+      <text class="muted">查看全部 ›</text>
+    </view>
+    <view class="order-entry__grid">
+      <view class="order-entry__item" data-status="0" bindtap="onOrdersTap">
+        <view class="order-entry__icon">待</view><text>待付款</text>
+      </view>
+      <view class="order-entry__item" data-status="1" bindtap="onOrdersTap">
+        <view class="order-entry__icon">配</view><text>待配送</text>
+      </view>
+      <view class="order-entry__item" data-status="2" bindtap="onOrdersTap">
+        <view class="order-entry__icon">送</view><text>配送中</text>
+      </view>
+      <view class="order-entry__item" data-status="3" bindtap="onOrdersTap">
+        <view class="order-entry__icon">完</view><text>已完成</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card tools">
+    <view class="tool-row" bindtap="onCoupons">
+      <view class="tool-row__icon tool-row__icon--coupon">券</view>
+      <text>我的优惠券</text>
+      <view class="tool-row__extra muted">{{coupons.length}} 张 ›</view>
+    </view>
+    <view class="tool-row" bindtap="onPointsRecords">
+      <view class="tool-row__icon tool-row__icon--point">积</view>
+      <text>积分明细</text>
+      <view class="tool-row__extra muted">{{profile ? profile.points : 0}} 分 ›</view>
+    </view>
+    <view class="tool-row" bindtap="onAddresses">
+      <view class="tool-row__icon tool-row__icon--addr">址</view>
+      <text>收货地址</text>
+      <view class="tool-row__extra muted">{{addresses.length}} 个 ›</view>
+    </view>
+    <view class="tool-row" bindtap="onService">
+      <view class="tool-row__icon tool-row__icon--service">客</view>
+      <text>联系客服</text>
+      <view class="tool-row__extra muted">09:00-21:00 ›</view>
+    </view>
+  </view>
+
+  <view wx:if="{{logged}}" class="btn btn--danger logout" bindtap="onLogout">退出登录</view>
+
+  <tab-bar current="mine" />
+</view>

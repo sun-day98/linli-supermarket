@@ -1,0 +1,46 @@
+.login-hero {
+  text-align: center;
+  padding: 90rpx 0 56rpx;
+}
+
+.login-hero__logo {
+  width: 130rpx;
+  height: 130rpx;
+  border-radius: 32rpx;
+  background: linear-gradient(135deg, #07c160, #06ad56);
+  color: #fff;
+  font-size: 64rpx;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24rpx;
+}
+
+.login-hero__title {
+  font-size: 40rpx;
+  font-weight: 700;
+}
+
+.login-hero__slogan {
+  color: #8a9199;
+  font-size: 26rpx;
+  margin-top: 10rpx;
+}
+
+.login-form {
+  padding: 20rpx 30rpx 32rpx;
+}
+
+.login-form__tip {
+  color: #8a9199;
+  font-size: 24rpx;
+  line-height: 1.6;
+  padding: 24rpx 0;
+}
+
+.login-form__submit {
+  text-align: center;
+  padding: 24rpx;
+  font-size: 30rpx;
+}

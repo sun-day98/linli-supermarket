@@ -1,0 +1,41 @@
+<view class="page cart-page">
+  <view class="cart-header">购物车 <text class="muted">（{{items.length}}）</text></view>
+
+  <view wx:for="{{items}}" wx:key="id" class="card cart-item">
+    <view class="cart-item__check {{item.selected === 1 ? 'on' : ''}}"
+          data-id="{{item.id}}" data-product-id="{{item.productId}}"
+          data-quantity="{{item.quantity}}" data-selected="{{item.selected}}" bindtap="onToggle">{{item.selected === 1 ? '✓' : ''}}</view>
+    <image src="{{item.productImage}}" mode="aspectFill" />
+    <view class="cart-item__body">
+      <view class="ellipsis">{{item.productName}}</view>
+      <view class="muted ellipsis">{{item.spec}}</view>
+      <view class="row-between cart-item__bottom">
+        <view class="price">{{item.priceText}}</view>
+        <view class="stepper">
+          <view data-id="{{item.id}}" data-product-id="{{item.productId}}" data-quantity="{{item.quantity}}"
+                data-stock="{{item.stock}}" data-selected="{{item.selected}}" data-delta="-1" bindtap="onChangeQty">-</view>
+          <text>{{item.quantity}}</text>
+          <view data-id="{{item.id}}" data-product-id="{{item.productId}}" data-quantity="{{item.quantity}}"
+                data-stock="{{item.stock}}" data-selected="{{item.selected}}" data-delta="1" bindtap="onChangeQty">+</view>
+        </view>
+      </view>
+    </view>
+    <view class="cart-item__remove" data-id="{{item.id}}" bindtap="onRemove">×</view>
+  </view>
+
+  <view wx:if="{{items.length === 0}}" class="empty">购物车还是空的，去逛逛吧</view>
+
+  <view class="cart-bar">
+    <view class="row" bindtap="onToggleAll">
+      <view class="cart-bar__check {{allSelected ? 'on' : ''}}">{{allSelected ? '✓' : ''}}</view>
+      <text>全选</text>
+    </view>
+    <view class="cart-bar__total">
+      <view>合计 <text class="price">{{totalAmountText}}</text></view>
+      <view class="muted">已选 {{totalCount}} 件</view>
+    </view>
+    <view class="btn" bindtap="onCheckout">去结算</view>
+  </view>
+
+  <tab-bar current="cart" />
+</view>

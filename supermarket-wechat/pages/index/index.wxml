@@ -1,0 +1,38 @@
+<view class="page">
+  <view class="hero">
+    <view class="row-between">
+      <view>
+        <view class="hero__name">{{store.storeName || '邻里小超'}}</view>
+        <view class="hero__slogan">{{store.slogan || '新鲜到家，邻里共享'}}</view>
+      </view>
+      <view class="hero__badge">社区优选</view>
+    </view>
+    <view class="hero__search" bindtap="goSearch">
+      <input placeholder="搜索商品 / 分类" confirm-type="search" bindinput="onSearchInput" bindconfirm="goSearch" />
+    </view>
+  </view>
+
+  <view class="card notice">
+    <text class="notice__label">公告</text>
+    <text class="ellipsis">{{store.notice || '本店支持当日达'}}</text>
+  </view>
+
+  <view class="section-title">商品分类</view>
+  <view class="card category-grid">
+    <view class="category-grid__item" wx:for="{{categories}}" wx:key="id" data-id="{{item.id}}" bindtap="goCategory">
+      <image src="{{item.icon}}" mode="aspectFill" />
+      <text>{{item.name}}</text>
+    </view>
+  </view>
+  <view class="view-all" bindtap="goAllCategory">查看全部分类 ›</view>
+
+  <view class="section-title">热门推荐</view>
+  <view class="product-grid">
+    <view class="product-grid__item" wx:for="{{products}}" wx:key="id">
+      <product-card product="{{item}}" bind:add="onAdd" />
+    </view>
+  </view>
+  <view wx:if="{{products.length === 0}}" class="empty">暂无热门商品</view>
+
+  <tab-bar current="home" />
+</view>

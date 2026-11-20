@@ -1,0 +1,39 @@
+# ===== 构建产物 =====
+**/target/
+**/dist/
+**/build/
+**/out/
+
+# ===== Node.js =====
+**/node_modules/
+**/.npm/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ===== 日志 =====
+*.log
+logs/
+
+# ===== IDE / 编辑器 =====
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+
+# ===== 操作系统 =====
+.DS_Store
+Thumbs.db
+
+# ===== WorkBuddy 本地数据（非项目源码） =====
+.workbuddy/
+
+# ===== 环境变量 / 密钥（禁止提交） =====
+.env
+.env.*
+!.env.example
+
+# ===== 临时文件 =====
+*.tmp
+*.bak

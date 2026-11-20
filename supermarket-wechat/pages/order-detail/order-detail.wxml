@@ -1,0 +1,52 @@
+<view class="page detail-page" wx:if="{{order}}">
+  <view class="status-banner status-banner--{{order.status}}">
+    <view class="status-banner__text">{{order.statusText}}</view>
+    <view wx:if="{{order.status === 0}}" class="status-banner__hint">请在 24 小时内完成支付</view>
+    <view wx:elif="{{order.status === 1}}" class="status-banner__hint">商家正在为您备货</view>
+    <view wx:elif="{{order.status === 2}}" class="status-banner__hint">商品正在配送途中</view>
+    <view wx:elif="{{order.status === 3}}" class="status-banner__hint">感谢您的购买，积分已到账</view>
+    <view wx:else class="status-banner__hint">订单已取消</view>
+  </view>
+
+  <view class="card" bindtap="onCopyOrderNo">
+    <view class="row-between"><text>订单号</text><text class="muted">{{order.orderNo}}　复制</text></view>
+    <view class="divider"></view>
+    <view class="row-between"><text>下单时间</text><text class="muted">{{order.createdText}}</text></view>
+  </view>
+
+  <view class="card">
+    <view class="row-between">
+      <text class="detail-receiver">{{order.receiver}}</text>
+      <text class="muted">{{order.phone}}</text>
+    </view>
+    <view class="muted detail-address">{{order.addressDetail}}</view>
+  </view>
+
+  <view class="card">
+    <view class="section-title" style="margin:0 0 12rpx">商品清单</view>
+    <view wx:for="{{order.items}}" wx:key="id" class="detail-item">
+      <image src="{{item.productImage}}" mode="aspectFill" />
+      <view class="detail-item__body">
+        <view class="ellipsis">{{item.productName}}</view>
+        <view class="muted">{{item.priceText}} × {{item.quantity}}</view>
+      </view>
+      <view class="price">{{item.totalText}}</view>
+    </view>
+    <view class="divider"></view>
+    <view class="row-between amount-line"><text>商品金额</text><text>{{order.goodsText}}</text></view>
+    <view class="row-between amount-line"><text>配送费</text><text>{{order.deliveryText}}</text></view>
+    <view class="row-between amount-line"><text>优惠金额</text><text class="price">-{{order.discountText}}</text></view>
+    <view class="row-between amount-line amount-line--total"><text>实付金额</text><text class="price">{{order.payText}}</text></view>
+    <view wx:if="{{order.remark}}" class="muted detail-extra">备注：{{order.remark}}</view>
+    <view wx:if="{{order.payTimeText}}" class="muted detail-extra">支付时间：{{order.payTimeText}}</view>
+    <view wx:if="{{order.finishTimeText}}" class="muted detail-extra">完成时间：{{order.finishTimeText}}</view>
+  </view>
+
+  <view class="detail-bar">
+    <view wx:if="{{order.status === 0}}" class="btn btn--danger" bindtap="onCancel">取消订单</view>
+    <view wx:if="{{order.status === 0}}" class="btn" bindtap="onPay">立即支付</view>
+    <view wx:if="{{order.status === 2}}" class="btn" bindtap="onFinish">确认收货</view>
+    <view wx:if="{{order.status === 3}}" class="muted">订单已完成，感谢您的购买</view>
+    <view wx:if="{{order.status === 4}}" class="muted">订单已取消</view>
+  </view>
+</view>

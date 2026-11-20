@@ -1,0 +1,15 @@
+<view class="pc" bindtap="onTap">
+  <view class="pc__image-wrap">
+    <image class="pc__image" src="{{product.image}}" mode="aspectFill" />
+    <view wx:if="{{product.lowStock}}" class="pc__tag">库存紧张</view>
+  </view>
+  <view class="pc__body">
+    <view class="pc__name ellipsis">{{product.name}}</view>
+    <view class="muted ellipsis">{{product.subtitle}}</view>
+    <view class="row-between pc__row">
+      <view class="price">{{priceText}}</view>
+      <view class="pc__add" catchtap="onAdd">+</view>
+    </view>
+    <view class="muted ellipsis">已售 {{product.sales}} · {{stockText}}</view>
+  </view>
+</view>

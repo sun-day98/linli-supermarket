@@ -1,0 +1,75 @@
+<view class="page checkout-page">
+  <view class="card address-card" bindtap="openAddressSheet">
+    <view wx:if="{{addresses[addressIndex]}}">
+      <view class="row-between">
+        <view class="address-card__name">{{addresses[addressIndex].receiver}}</view>
+        <view class="muted">{{addresses[addressIndex].phone}}</view>
+      </view>
+      <view class="muted address-card__detail">{{addresses[addressIndex].province}}{{addresses[addressIndex].city}}{{addresses[addressIndex].district}}{{addresses[addressIndex].detail}}</view>
+      <view class="address-card__hint">点击更换地址 ›</view>
+    </view>
+    <view wx:else class="empty">请选择收货地址</view>
+  </view>
+
+  <view class="card">
+    <view class="section-title" style="margin: 0 0 12rpx">商品清单</view>
+    <view wx:for="{{items}}" wx:key="id" class="checkout-item">
+      <image src="{{item.productImage}}" mode="aspectFill" />
+      <view class="checkout-item__body">
+        <view class="ellipsis">{{item.productName}}</view>
+        <view class="muted">{{item.spec}} × {{item.quantity}}</view>
+      </view>
+      <view class="price">{{item.subtotalText}}</view>
+    </view>
+  </view>
+
+  <view class="card coupon-row" bindtap="openCouponSheet">
+    <view>优惠券</view>
+    <view class="row">
+      <view class="muted">{{couponIndex >= 0 ? coupons[couponIndex].name : '不使用优惠券'}}</view>
+      <view class="coupon-row__arrow">›</view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="field">
+      <view class="field__label">订单备注</view>
+      <input class="field__input" placeholder="选填" value="{{remark}}" bindinput="onRemarkInput" bindblur="refreshPreview" />
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="section-title" style="margin: 0 0 12rpx">金额明细</view>
+    <view class="row-between amount-line"><text>商品金额</text><text>{{goodsText}}</text></view>
+    <view class="row-between amount-line"><text>配送费</text><text>{{deliveryText}}</text></view>
+    <view class="row-between amount-line"><text>优惠金额</text><text class="price">-{{discountText}}</text></view>
+    <view class="row-between amount-line amount-line--total"><text>应付金额</text><text class="price">{{payText}}</text></view>
+    <view wx:if="{{preview && !preview.deliverable}}" class="deliver-error">当前地址暂不支持配送</view>
+  </view>
+
+  <view class="checkout-bar">
+    <view>应付 <text class="price">{{payText}}</text></view>
+    <view class="btn {{submitting ? 'btn--disabled' : ''}}" bindtap="onSubmit">提交订单</view>
+  </view>
+
+  <view wx:if="{{addressSheet}}" class="mask" bindtap="closeAddressSheet">
+    <view class="sheet" catchtap="">
+      <view class="sheet__title">选择收货地址</view>
+      <view wx:for="{{addresses}}" wx:key="id" class="sheet-address" data-index="{{index}}" bindtap="chooseAddress">
+        <view class="row-between"><strong>{{item.receiver}}</strong><text class="muted">{{item.phone}}</text></view>
+        <view class="muted">{{item.province}}{{item.city}}{{item.district}}{{item.detail}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{couponSheet}}" class="mask" bindtap="closeCouponSheet">
+    <view class="sheet" catchtap="">
+      <view class="sheet__title">选择优惠券</view>
+      <view class="sheet-address" data-index="-1" bindtap="chooseCoupon">不使用优惠券</view>
+      <view wx:for="{{coupons}}" wx:key="id" class="sheet-address" data-index="{{index}}" bindtap="chooseCoupon">
+        <view class="row-between"><text>{{item.name}}</text><text class="price">{{item.discountText}}</text></view>
+        <view class="muted">满 {{item.threshold}} 元可用</view>
+      </view>
+    </view>
+  </view>
+</view>

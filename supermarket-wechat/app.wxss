@@ -1,0 +1,17 @@
+@import './styles/common.wxss';
+
+page {
+  background: #f5f6f8;
+  color: #1f2329;
+  font-size: 28rpx;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+.page {
+  min-height: 100vh;
+  padding-bottom: 120rpx;
+}
+
+.page--plain {
+  padding-bottom: 40rpx;
+}

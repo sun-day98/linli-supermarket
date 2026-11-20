@@ -1,0 +1,101 @@
+%% 图1：主旅程 登录 → 试算 → 下单 → 支付 → 配送 → 收货发积分
+sequenceDiagram
+    autonumber
+    participant C as H5/小程序
+    participant AC as AuthController
+    participant OC as OrderController
+    participant OS as OrderService
+    participant PS as ProductService
+    participant CS as CouponService
+    participant SS as StoreService
+    participant PNT as PointsService
+    participant DB as MySQL
+
+    Note over C,DB: ① 登录（新手机号自动注册）
+    C->>AC: POST /api/auth/login {phone, code=123456}
+    AC->>DB: 查 user；不存在则插入用户+初始化地址+发新人券
+    AC-->>C: Result{code:0, data:{token, userInfo}}
+
+    Note over C,DB: ② 金额试算
+    C->>OC: POST /api/orders/preview {items, addressId, couponId}
+    OC->>OS: preview(dto)
+    OS->>PS: 查询商品单价/库存
+    OS->>CS: 校验券时效/门槛/归属
+    OS->>SS: 读取配送费/免配送门槛
+    OS->>OS: calcAmount(BigDecimal, 2位)
+    OS-->>C: {goodsAmount, deliveryFee, discountAmount, payAmount}
+
+    Note over C,DB: ③ 提交订单（@Transactional）
+    C->>OC: POST /api/orders
+    OC->>OS: createOrder(userId, dto)
+    OS->>PS: 条件扣库存 UPDATE stock>=qty
+    alt 扣减影响行数不足
+        PS-->>OS: false → 抛 BusinessException(库存不足)
+        OS-->>C: Result{code:4001, message:"库存不足"}
+    end
+    OS->>CS: validateAndLock 锁券(未使用→锁定)
+    OS->>DB: 插入 orders(status=0) + order_item
+    OS-->>C: {orderNo, payAmount, status:待付款}
+
+    Note over C,DB: ④ 模拟支付（幂等 CAS）
+    C->>OC: POST /api/orders/{id}/pay {payType}
+    OC->>OS: pay(id, payType)
+    OS->>DB: UPDATE orders SET status=1 WHERE id=? AND status=0
+    OS->>CS: consume 核销券(锁定→已使用)
+    OS-->>C: status=已付款/待配送
+
+    Note over C,DB: ⑤ 后台发货
+    C->>OC: POST /api/orders/{id}/deliver（管理端）
+    OC->>OS: deliver(id, deliverymanId)
+    OS->>DB: status 1→2, 记 delivery_time
+
+    Note over C,DB: ⑥ 确认收货（发积分）
+    C->>OC: POST /api/orders/{id}/finish
+    OC->>OS: finish(id) @Transactional
+    OS->>DB: status 2→3, 记 finish_time
+    OS->>PNT: award(userId, payAmount, orderId) 1元=1积分
+    PNT->>DB: 更新 user.points + 插入 points_record
+    OS-->>C: status=已完成, 获得积分
+
+%% 图2：取消订单 库存/优惠券/积分回滚
+sequenceDiagram
+    autonumber
+    participant C as 客户端/后台
+    participant OC as OrderController
+    participant OS as OrderService
+    participant PS as ProductService
+    participant CS as CouponService
+    participant PNT as PointsService
+    participant DB as MySQL
+
+    C->>OC: POST /api/orders/{id}/cancel
+    OC->>OS: cancel(id) @Transactional
+    OS->>DB: 查询订单快照（状态/商品/券/积分）
+    alt 已发积分（状态=已完成）
+        OS->>PNT: rollback(userId, orderId) 记负向流水并减余额
+    end
+    alt 券已核销或已锁定
+        OS->>CS: release(userCouponId) → 未使用
+    end
+    alt 库存已扣减
+        OS->>PS: rollbackStock(productId, qty) 逐项加回
+    end
+    OS->>DB: UPDATE orders SET status=4, cancel_time=NOW()
+    OS->>DB: 提交事务
+    OS-->>C: Result{code:0, message:"取消成功"}
+
+%% 图3：管理后台数据概览
+sequenceDiagram
+    autonumber
+    participant A as 管理后台
+    participant SC as StatsController
+    participant SS as StatsService
+    participant DB as MySQL
+    A->>SC: GET /api/admin/stats/overview
+    SC->>SS: overview()
+    SS->>DB: 聚合查询 今日销售额/订单数/客单价/新增会员/待付款/配送中/库存紧张
+    SS-->>A: StatsOverviewVO
+    A->>SC: GET /api/admin/stats/trend?days=7
+    SC->>SS: trend(days)
+    SS->>DB: 按日 GROUP BY 销售额/订单数
+    SS-->>A: StatsTrendVO → ECharts 折线图渲染

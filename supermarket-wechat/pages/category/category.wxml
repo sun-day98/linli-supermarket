@@ -1,0 +1,28 @@
+<view class="page category-page">
+  <view class="cat-menu">
+    <view
+      wx:for="{{categories}}"
+      wx:key="id"
+      class="cat-menu__item {{item.id === currentId ? 'cat-menu__item--active' : ''}}"
+      data-id="{{item.id}}"
+      data-name="{{item.name}}"
+      bindtap="onCategoryTap"
+    >{{item.name}}</view>
+  </view>
+  <view class="cat-content">
+    <view class="cat-banner">
+      <view class="cat-banner__title">{{currentName}}</view>
+      <view class="muted">精选好物 · 新鲜直达</view>
+    </view>
+    <view wx:for="{{products}}" wx:key="id" class="cat-product card" data-id="{{item.id}}" bindtap="onProductTap">
+      <image src="{{item.image}}" mode="aspectFill" />
+      <view class="cat-product__body">
+        <view class="ellipsis">{{item.name}}</view>
+        <view class="muted ellipsis">{{item.subtitle}}</view>
+        <view class="price">{{item.priceText}}</view>
+      </view>
+    </view>
+    <view wx:if="{{products.length === 0}}" class="empty">该分类暂无商品</view>
+  </view>
+  <tab-bar current="category" />
+</view>

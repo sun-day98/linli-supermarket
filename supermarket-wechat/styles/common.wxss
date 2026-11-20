@@ -1,0 +1,97 @@
+.card {
+  background: #fff;
+  border-radius: 20rpx;
+  box-shadow: 0 4rpx 18rpx rgba(0, 0, 0, 0.04);
+  margin: 20rpx 24rpx;
+  padding: 26rpx;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+}
+
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.price {
+  color: #f2270c;
+  font-weight: 700;
+}
+
+.muted {
+  color: #8a9199;
+  font-size: 24rpx;
+}
+
+.ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  margin: 28rpx 24rpx 14rpx;
+}
+
+.btn {
+  background: #07c160;
+  color: #fff;
+  border-radius: 999rpx;
+  font-size: 26rpx;
+  padding: 16rpx 32rpx;
+  line-height: 1.4;
+}
+
+.btn--ghost {
+  background: #fff;
+  color: #07c160;
+  border: 1rpx solid #07c160;
+}
+
+.btn--danger {
+  background: #fff;
+  color: #f5222d;
+  border: 1rpx solid #f5222d;
+}
+
+.btn--disabled {
+  background: #c9cdd4;
+  color: #fff;
+}
+
+.empty {
+  text-align: center;
+  color: #b8bfc6;
+  padding: 100rpx 24rpx;
+  font-size: 26rpx;
+}
+
+.divider {
+  height: 1rpx;
+  background: #ebedf0;
+  margin: 16rpx 0;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  min-height: 92rpx;
+  border-bottom: 1rpx solid #ebedf0;
+}
+
+.field__label {
+  width: 150rpx;
+  flex: none;
+  color: #8a9199;
+}
+
+.field__input {
+  flex: 1;
+  font-size: 28rpx;
+}

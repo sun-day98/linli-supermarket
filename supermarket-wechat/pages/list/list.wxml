@@ -1,0 +1,17 @@
+<view class="page">
+  <view class="search-bar">
+    <input placeholder="搜索商品" value="{{keyword}}" bindinput="onInput" bindconfirm="onSearch" confirm-type="search" />
+    <view class="search-bar__btn" bindtap="onSearch">搜索</view>
+  </view>
+  <view class="filter-bar">
+    <view class="{{hotOnly ? 'filter-bar__active' : ''}}" bindtap="toggleHot">热门</view>
+    <view class="muted">共 {{total}} 件</view>
+  </view>
+  <view class="product-grid">
+    <view wx:for="{{products}}" wx:key="id">
+      <product-card product="{{item}}" bind:add="onAdd" />
+    </view>
+  </view>
+  <view wx:if="{{products.length === 0}}" class="empty">没有找到相关商品</view>
+  <view wx:if="{{products.length < total}}" class="load-more" bindtap="onReachBottom">加载更多</view>
+</view>

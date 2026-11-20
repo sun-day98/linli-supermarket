@@ -1,0 +1,54 @@
+<view class="page detail" wx:if="{{product}}">
+  <image class="detail__image" src="{{product.image}}" mode="aspectFill" />
+
+  <view class="card detail__price">
+    <view class="row" style="align-items: baseline">
+      <view class="price detail__price-main">{{priceText}}</view>
+      <view class="muted detail__origin">{{originText}}</view>
+    </view>
+    <view class="row-between">
+      <view class="detail__name">{{product.name}}</view>
+      <view class="muted">已售 {{product.sales}}</view>
+    </view>
+    <view class="muted">{{product.subtitle}}</view>
+    <view class="detail__meta">
+      <text>规格：{{product.spec}}</text>
+      <text>库存：{{product.stock}}{{product.unit}}</text>
+      <text>配送：预计当日达</text>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="section-title" style="margin: 0 0 12rpx">商品详情</view>
+    <view class="detail__text">{{product.description}}</view>
+    <view class="section-title">营养 / 成分信息</view>
+    <view class="detail__text">{{product.nutrition || '详见商品包装说明'}}</view>
+  </view>
+
+  <view class="card">
+    <view class="row-between">
+      <view class="section-title" style="margin: 0">用户评价（{{reviews.length}}）</view>
+      <view class="muted">仅展示审核通过</view>
+    </view>
+    <view wx:for="{{reviews}}" wx:key="id" class="review">
+      <view class="row-between">
+        <view>用户{{item.userId}}</view>
+        <view class="review__stars">{{item.stars}}</view>
+      </view>
+      <view class="review__content">{{item.content}}</view>
+      <view class="muted">{{item.timeText}}</view>
+    </view>
+    <view wx:if="{{reviews.length === 0}}" class="empty">暂无评价</view>
+  </view>
+
+  <view class="detail__bar">
+    <view>
+      <view class="price">{{priceText}}</view>
+      <view class="muted">库存 {{product.stock}}{{product.unit}}</view>
+    </view>
+    <view class="row">
+      <view class="btn btn--ghost" bindtap="onAdd">加入购物车</view>
+      <view class="btn" style="margin-left: 16rpx" bindtap="onBuyNow">立即购买</view>
+    </view>
+  </view>
+</view>

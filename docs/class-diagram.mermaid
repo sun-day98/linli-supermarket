@@ -1,0 +1,186 @@
+classDiagram
+    direction TB
+
+    %% ===== 实体层 =====
+    class User {
+      +Long id
+      +String phone
+      +String password
+      +String nickname
+      +Integer points
+      +Integer status
+    }
+    class Admin {
+      +Long id
+      +String username
+      +String password
+      +String role
+    }
+    class Category {
+      +Long id
+      +String name
+      +Integer sort
+      +Integer status
+    }
+    class Product {
+      +Long id
+      +Long categoryId
+      +String name
+      +BigDecimal price
+      +Integer stock
+      +Integer stockAlert
+      +Integer status
+    }
+    class Cart {
+      +Long id
+      +Long userId
+      +Long productId
+      +Integer quantity
+      +Integer selected
+    }
+    class Address {
+      +Long id
+      +Long userId
+      +String district
+      +String detail
+      +Integer isDefault
+    }
+    class Coupon {
+      +Long id
+      +String name
+      +Integer type
+      +BigDecimal discount
+      +BigDecimal threshold
+      +Integer newUserAuto
+    }
+    class UserCoupon {
+      +Long id
+      +Long userId
+      +Long couponId
+      +Integer status
+      +Long orderId
+    }
+    class PointsRecord {
+      +Long id
+      +Long userId
+      +Integer type
+      +Integer points
+      +Integer balance
+    }
+    class Orders {
+      +Long id
+      +String orderNo
+      +Long userId
+      +BigDecimal goodsAmount
+      +BigDecimal deliveryFee
+      +BigDecimal discountAmount
+      +BigDecimal payAmount
+      +Integer status
+    }
+    class OrderItem {
+      +Long id
+      +Long orderId
+      +Long productId
+      +BigDecimal price
+      +Integer quantity
+    }
+    class Review {
+      +Long id
+      +Long userId
+      +Long productId
+      +Integer rating
+      +Integer status
+    }
+    class DeliveryArea {
+      +Long id
+      +Long parentId
+      +String name
+      +Integer type
+      +Integer enabled
+      +Integer hot
+    }
+    class Deliveryman {
+      +Long id
+      +String name
+      +String phone
+      +Integer status
+    }
+    class StoreSetting {
+      +Long id
+      +BigDecimal deliveryFee
+      +BigDecimal freeDeliveryThreshold
+      +String servicePhone
+    }
+
+    %% ===== 服务层 =====
+    class AuthService {
+      +login(LoginDTO) UserVO
+      +adminLogin(AdminLoginDTO) String
+      +autoRegister(String) User
+    }
+    class ProductService {
+      +page(ProductQueryDTO) PageResult
+      +detail(Long) ProductVO
+      +deductStock(Long,Integer) boolean
+      +rollbackStock(Long,Integer) void
+    }
+    class CouponService {
+      +validateAndLock(Long userId,Long ucId,BigDecimal amount) boolean
+      +consume(Long ucId,Long orderId) void
+      +release(Long ucId) void
+    }
+    class PointsService {
+      +award(Long userId,BigDecimal payAmount,Long orderId) void
+      +rollback(Long userId,Long orderId) void
+    }
+    class OrderService {
+      +preview(CheckoutDTO) CheckoutPreviewVO
+      +createOrder(Long userId,CheckoutDTO) Orders
+      +pay(Long orderId,String payType) void
+      +deliver(Long orderId,Long deliverymanId) void
+      +finish(Long orderId) void
+      +cancel(Long orderId) void
+      -calcAmount(List~OrderItem~,Coupon,StoreSetting) CheckoutPreviewVO
+    }
+    class DataInitService {
+      +run(String... args) void
+      +initSchema() void
+      +seedDemoData() void
+    }
+
+    %% ===== 控制器层 =====
+    class OrderController {
+      +preview(CheckoutDTO) Result
+      +create(CheckoutDTO) Result
+      +pay(Long,String) Result
+      +deliver(Long,Long) Result
+      +finish(Long) Result
+      +cancel(Long) Result
+    }
+    class TokenInterceptor {
+      +preHandle(HttpServletRequest,HttpServletResponse,Object) boolean
+    }
+
+    %% ===== 关系 =====
+    Category "1" --> "0..*" Product : 分类包含
+    Product "1" --> "0..*" Cart : 加入
+    Product "1" --> "0..*" OrderItem : 快照
+    User "1" --> "0..*" Cart : 拥有
+    User "1" --> "0..*" Address : 拥有
+    User "1" --> "0..*" Orders : 下单
+    Orders "1" *-- "1..*" OrderItem : 组合
+    User "1" --> "0..*" UserCoupon : 持有
+    Coupon "1" --> "0..*" UserCoupon : 发放
+    User "1" --> "0..*" PointsRecord : 积分流水
+    User "1" --> "0..*" Review : 评价
+    Product "1" --> "0..*" Review : 被评价
+    DeliveryArea "1" --> "0..*" DeliveryArea : 自关联 市-区
+    Deliveryman "1" --> "0..*" Orders : 配送
+
+    OrderController ..> OrderService : 调用
+    OrderService ..> ProductService : 扣/回滚库存
+    OrderService ..> CouponService : 锁/核销/释放
+    OrderService ..> PointsService : 发/回滚积分
+    TokenInterceptor ..> AuthService : 校验Token
+    DataInitService ..> StoreSetting : 初始化
+    DataInitService ..> Admin : 初始化
